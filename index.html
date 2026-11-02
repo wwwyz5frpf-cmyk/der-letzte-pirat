@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#18232b">
+<title>Der letzte Pirat – Prototyp</title>
+<style>
+:root{--ink:#18232b;--paper:#f5e8c9;--gold:#e9b957;--rust:#a94f35}
+*{box-sizing:border-box}
+body{margin:0;background:#18232b;color:var(--paper);font-family:Georgia,serif;min-height:100vh;display:flex;justify-content:center}
+#game{width:min(100%,900px);padding:12px;display:flex;flex-direction:column;gap:10px}
+header{display:flex;justify-content:space-between;align-items:center;gap:8px}
+h1{font-size:clamp(20px,5vw,30px);margin:0;color:#f3c96d;text-shadow:2px 2px #542e23}
+#roomName{font-size:14px;color:#d8c9a5}
+#scene{position:relative;width:100%;aspect-ratio:16/10;overflow:hidden;border:4px solid #d7b978;border-radius:12px;background:#6d8c91;box-shadow:0 8px 24px #0008}
+#scene svg{width:100%;height:100%;display:block}
+.hotspot{cursor:pointer;outline:none}
+.hotspot:focus{filter:drop-shadow(0 0 5px #ffe38a)}
+.hotspot:hover{filter:brightness(1.12)}
+#hint{font-size:13px;color:#d8c9a5;min-height:18px}
+#dialogue{background:#f5e8c9;color:#2b2520;border:3px solid #b98c4b;border-radius:10px;padding:12px;min-height:88px;display:flex;flex-direction:column;gap:8px}
+#speaker{font-weight:bold;color:#8a3f2c}
+#say{line-height:1.35}
+#next{align-self:flex-end;border:0;border-radius:7px;padding:9px 16px;background:#8b452f;color:white;font-weight:bold;font-size:15px}
+#bottom{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:stretch}
+#inventory{border:2px solid #b98c4b;border-radius:9px;padding:8px;background:#29363b;min-height:62px}
+#inventory strong{display:block;font-size:13px;color:#f3c96d;margin-bottom:5px}
+#items{display:flex;gap:7px;flex-wrap:wrap}
+.item{border:1px solid #d7b978;border-radius:6px;padding:5px 8px;font-size:13px;background:#435057;cursor:pointer}
+.item.selected{background:#9a5b34;outline:2px solid #f3c96d}
+#nav{display:flex;flex-direction:column;gap:6px}
+.navbtn{border:1px solid #d7b978;border-radius:7px;background:#34464d;color:#f5e8c9;padding:8px 10px;font: bold 13px Georgia;min-width:105px}
+.navbtn:disabled{opacity:.35}
+footer{text-align:center;color:#9eaaab;font:12px Arial,sans-serif}
+@media(max-width:430px){#game{padding:8px;gap:8px}#scene{aspect-ratio:4/3}#bottom{grid-template-columns:1fr}#nav{flex-direction:row}.navbtn{flex:1}#dialogue{min-height:100px}}
+</style>
+</head>
+<body>
+<main id="game">
+<header><div><h1>Der letzte Pirat</h1><div id="roomName">Die Hafenkneipe</div></div><div style="font-size:24px">☠️</div></header>
+<div id="scene" aria-label="Spielszene"></div>
+<div id="hint">Tipp: Tippe auf Personen und Gegenstände, um sie zu untersuchen.</div>
+<section id="dialogue"><div id="speaker">Erzähler</div><div id="say">Ein neuer Tag. Ein alter Kater. Und irgendwo da draußen ein Schiff, das vermutlich nicht mehr dir gehört.</div><button id="next">Weiter ▶</button></section>
+<div id="bottom">
+<section id="inventory"><strong>INVENTAR – tippe einen Gegenstand an</strong><div id="items"><span style="color:#b8c0bc;font-size:13px">Noch gähnende Leere …</span></div></section>
+<nav id="nav"><button class="navbtn" id="toTavern">Kneipe</button><button class="navbtn" id="toHarbor">Zum Hafen →</button></nav>
+</div>
+<footer>Mini-Adventure-Prototyp · Touch-Steuerung · Version 0.1</footer>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+let room="tavern", inventory=[], selected=null, keyTaken=false, parrotFed=false, dialogueQueue=[], dialogueIndex=0;
+function say(speaker,lines){$("speaker").textContent=speaker;dialogueQueue=lines;dialogueIndex=0;$("say").textContent=lines[0];}
+$("next").onclick=()=>{if(dialogueIndex<dialogueQueue.length-1){dialogueIndex++;$("say").textContent=dialogueQueue[dialogueIndex]}};
+function addItem(name){if(!inventory.includes(name)){inventory.push(name);renderInventory();say("Inventar",[name+" eingesammelt. Man weiß ja nie, wofür man so etwas brauchen kann."]);}}
+function renderInventory(){$("items").innerHTML="";if(!inventory.length){$("items").innerHTML='<span style="color:#b8c0bc;font-size:13px">Noch gähnende Leere …</span>';return}
+inventory.forEach(item=>{let b=document.createElement("button");b.className="item"+(selected===item?" selected":"");b.textContent=item;b.onclick=()=>{selected=selected===item?null:item;renderInventory();$("hint").textContent=selected?"Ausgewählt: "+selected+". Tippe jetzt auf etwas in der Szene.":"Gegenstand abgewählt.";};$("items").appendChild(b)})}
+function sceneTavern(){return `<svg viewBox="0 0 800 500" role="img" aria-label="Handgezeichnete Hafenkneipe">
+<defs><linearGradient id="wall" x2="0" y2="1"><stop stop-color="#d5a66c"/><stop offset="1" stop-color="#9b6547"/></linearGradient><pattern id="wood" width="90" height="20" patternUnits="userSpaceOnUse"><rect width="90" height="20" fill="#79513b"/><path d="M0 2H90M0 18H90" stroke="#b17b51" stroke-width="2"/></pattern></defs>
+<rect width="800" height="500" fill="url(#wall)"/><path d="M0 0H800V80H0Z" fill="#5c4034"/><path d="M0 80H800" stroke="#e0b77d" stroke-width="8"/>
+<rect x="40" y="115" width="180" height="150" rx="8" fill="#493b32" stroke="#e4bd7a" stroke-width="9"/><rect x="53" y="128" width="154" height="124" fill="#82a8a4"/><path d="M130 128V252M53 190H207" stroke="#e4bd7a" stroke-width="8"/><path d="M58 245L200 135" stroke="#d8e3d0" stroke-width="4" opacity=".5"/>
+<rect x="585" y="110" width="160" height="190" fill="#68412e" stroke="#e1b875" stroke-width="8"/><path d="M605 135H725M605 180H725M605 225H725" stroke="#b7824c" stroke-width="8"/><g fill="#e2c27e"><path d="M620 130q-10 -30 12 -30q22 0 12 30Z"/><path d="M675 175q-10 -30 12 -30q22 0 12 30Z"/><path d="M710 220q-10 -30 12 -30q22 0 12 30Z"/></g>
+<rect y="330" width="800" height="170" fill="url(#wood)"/><path d="M0 350H800" stroke="#d09a60" stroke-width="8"/>
+<!-- barrel -->
+<g class="hotspot" tabindex="0" onclick="clickBarrel()"><ellipse cx="130" cy="370" rx="58" ry="18" fill="#a36b3d"/><path d="M72 370Q80 470 130 470Q180 470 188 370Z" fill="#8b542f" stroke="#4c3025" stroke-width="7"/><path d="M78 395H182M84 445H176" stroke="#d2a365" stroke-width="9"/><text x="130" y="420" text-anchor="middle" fill="#f5d59b" font-size="17">?</text></g>
+<!-- barkeeper -->
+<g class="hotspot" tabindex="0" onclick="clickBarkeep()"><ellipse cx="420" cy="310" rx="82" ry="22" fill="#4a3028"/><path d="M365 200Q365 160 420 160Q475 160 475 200L490 340H350Z" fill="#e7d4b0" stroke="#53392c" stroke-width="7"/><path d="M375 185Q420 130 465 185L450 210H390Z" fill="#49372d"/><circle cx="400" cy="220" r="8" fill="#302720"/><circle cx="440" cy="220" r="8" fill="#302720"/><path d="M405 250Q420 265 440 248" fill="none" stroke="#8e4533" stroke-width="6" stroke-linecap="round"/><path d="M380 280Q420 300 460 280" stroke="#9b5b36" stroke-width="12"/><text x="420" y="145" text-anchor="middle" fill="#302720" font-size="18" font-weight="bold">BERT</text></g>
+<!-- key glint -->
+<g class="hotspot" tabindex="0" onclick="clickKey()"><path d="M690 320l18 0 0 8 -18 0z" fill="#f5d56e"/><circle cx="688" cy="324" r="8" fill="none" stroke="#f5d56e" stroke-width="5"/><text x="700" y="305" text-anchor="middle" fill="#fff2b7" font-size="15">✦</text></g>
+<text x="400" y="485" text-anchor="middle" fill="#f0d3a0" font-size="18" opacity=".8">Die Möwe &amp; der miese Matrose</text>
+</svg>`}
+function sceneHarbor(){return `<svg viewBox="0 0 800 500" role="img" aria-label="Kleiner Hafen"><rect width="800" height="500" fill="#91b8bd"/><circle cx="660" cy="85" r="45" fill="#f4d58a"/><path d="M0 245Q120 220 240 245T480 245T800 235V500H0Z" fill="#387f91"/><path d="M0 270Q120 250 240 270T480 270T800 260" fill="none" stroke="#b5d9d1" stroke-width="7"/><path d="M0 350H800V500H0Z" fill="#a7784b"/><path d="M0 360H800M0 405H800M0 450H800" stroke="#6d4b37" stroke-width="8"/><path d="M100 350V160H112V350M106 165L225 285H106Z" fill="#f1dfb5" stroke="#65452e" stroke-width="7"/><path d="M220 285Q270 320 320 285L300 340H240Z" fill="#69442f"/><g class="hotspot" tabindex="0" onclick="clickParrot()"><path d="M570 285Q550 245 580 220Q620 210 628 255L650 285Z" fill="#e3b84e" stroke="#493c2c" stroke-width="5"/><circle cx="598" cy="244" r="7" fill="#242323"/><path d="M620 252l26 10-26 8Z" fill="#c95c36"/><path d="M582 285l-12 20m34-20l12 20" stroke="#4b3a2a" stroke-width="6"/><text x="600" y="205" text-anchor="middle" font-size="18" fill="#302720">KÄPT'N KRAK</text></g><g class="hotspot" tabindex="0" onclick="clickBoat()"><path d="M360 330H520L490 385H390Z" fill="#65412e" stroke="#382a24" stroke-width="7"/><path d="M435 330V190" stroke="#523d2b" stroke-width="9"/><path d="M440 200L500 300H440Z" fill="#f1e2bd" stroke="#523d2b" stroke-width="5"/></g><text x="400" y="480" text-anchor="middle" fill="#f5e8c9" font-size="20">Hafen – hier riecht alles nach Fisch und Ärger</text></svg>`}
+function render(){ $("roomName").textContent=room==="tavern"?"Die Hafenkneipe":"Der Hafen";$("scene").innerHTML=room==="tavern"?sceneTavern():sceneHarbor();$("toTavern").disabled=room==="tavern";$("toHarbor").disabled=room==="harbor";$("hint").textContent="Tippe auf Personen und Gegenstände, um sie zu untersuchen.";}
+function clickBarkeep(){if(selected){say("Bert, der Barkeeper",["Du willst "+selected+" mit mir tauschen? Ich nehme nur Gold. Oder Komplimente. Gute Komplimente."]);selected=null;renderInventory();return}say("Bert, der Barkeeper",["Na endlich wach, Käpt'n. Du schuldest mir 37 Goldstücke.","Und nein: Ein selbst gemaltes Bild von deinem Schiff gilt nicht als Zahlungsmittel."])}
+function clickBarrel(){if(selected==="Schlüssel"){say("Erzähler",["Du probierst den Schlüssel am Fass. Das Fass ist nicht abgeschlossen. Es ist ein Fass."]);selected=null;renderInventory()}else say("Erzähler",["Ein Fass. Es riecht nach Rum und schlechten Entscheidungen.","Du hörst etwas darin klappern, aber deine Arme passen nicht hinein."])}
+function clickKey(){if(keyTaken){say("Erzähler",["Hier lag der Schlüssel. Jetzt liegt er in deiner Tasche. Hoffentlich."]);return}keyTaken=true;addItem("Messingschlüssel");}
+function clickParrot(){if(selected==="Keks"){parrotFed=true;inventory=inventory.filter(x=>x!=="Keks");selected=null;renderInventory();say("Käpt'n Krak",["KRÄCHZ! Endlich jemand mit Manieren!","Der Hafenmeister versteckt die Bootserlaubnis unter seinem Hut. KRÄCHZ!"]);return}say("Käpt'n Krak",["KRÄCHZ! Ich bin kein gewöhnlicher Papagei. Ich bin Steuerberater!","Bring mir einen Keks, und ich verrate dir ein streng geheimes Geheimnis."])}
+function clickBoat(){if(selected==="Messingschlüssel"){say("Erzähler",["Der Schlüssel passt nicht. Das Boot hat gar kein Schloss. Du solltest weniger Dinge ausprobieren, die offensichtlich nicht passen."]);selected=null;renderInventory()}else say("Erzähler",["Ein kleines Ruderboot. Es hat ein Loch, zwei Ruder und die Ausstrahlung eines nassen Schuhs.","Vielleicht lässt es sich reparieren. Oder anzünden."])}
+$("toHarbor").onclick=()=>{room="harbor";render();say("Erzähler",["Du trittst hinaus in den Hafen.","Eine Möwe klaut einem Matrosen sein Frühstück. Ein ganz normaler Dienstag."]);};
+$("toTavern").onclick=()=>{room="tavern";render();say("Erzähler",["Zurück in die Kneipe. Der Geruch ist immer noch derselbe: Rum, Holz und finanzielle Probleme."]);};
+render();
+</script>
+</body></html>
